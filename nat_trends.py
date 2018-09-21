@@ -73,4 +73,3 @@ if len(texts) is not 0:
 # TODO:
 # text processing
 # mapping
-# EASY LOL
