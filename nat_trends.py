@@ -11,7 +11,7 @@ def remove_non_ascii(text):
     return unidecode(text)
 
 
-dbconn = sqlite3.connect("nat_tracks.db")
+dbconn = sqlite3.connect("resources/nat_tracks.db")
 dbcurs = dbconn.cursor()
 dbcurs.execute("CREATE TABLE IF NOT EXISTS nat (day_of_month int, month int, year int, epochtime int, details text)")
 
@@ -70,3 +70,7 @@ if len(texts) is not 0:
     print("Collected info for " + str(len(texts)) + " NAT tracks")
 
 
+# TODO:
+# text processing
+# mapping
+# EASY LOL
