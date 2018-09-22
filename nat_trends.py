@@ -5,6 +5,10 @@ from html.parser import HTMLParser
 from unidecode import unidecode
 import requests
 import sqlite3
+from mpl_toolkits.basemap import Basemap
+import numpy as np
+import matplotlib.pyplot as plt
+import ggplot
 
 
 def remove_non_ascii(text):
@@ -15,6 +19,7 @@ dbconn = sqlite3.connect("resources/nat_tracks.db")
 dbcurs = dbconn.cursor()
 dbcurs.execute("CREATE TABLE IF NOT EXISTS nat (day_of_month int, month int, year int, epochtime int, details text)")
 
+get_new = True
 date = datetime.date.today()
 day_of_month = date.day
 month = date.month
@@ -26,15 +31,20 @@ if len(results) is not 0:
     if len(results) is 5:
         dbcurs.execute("DELETE FROM nat WHERE day_of_month = ? AND month = ? AND year = ?", [day_of_month, month, year])
         print("Clearing partial results collected already for a re-run; deleted " + str(dbcurs.fetchall()) + " rows")
+    elif len(results) is 14:
+        print("Nothing to collect for today; already got 14 tracks")
+        get_new = False
     else:
-        print("Nothing to collect for today; already got 5+9 tracks")
-        exit(1)
+        print("Got " + str(len(results)) + " for today")
 
 texts = []
 url = "https://www.notams.faa.gov/common/nat.html"
-response = requests.get(url)
-the_page = response.content.decode("utf-8")
 epoch_time = int(time.time())
+the_page = ""
+
+if get_new is True:
+    response = requests.get(url)
+    the_page = response.content.decode("utf-8")
 
 
 class MyParser(HTMLParser):
@@ -57,12 +67,13 @@ class MyParser(HTMLParser):
                 texts.append(data.lstrip(" "))
 
 
-parser = MyParser()
-parser.feed(the_page)
+if get_new is True:
+    parser = MyParser()
+    parser.feed(the_page)
 
-for i in texts:
-    dbcurs.execute("INSERT INTO nat VALUES (?,?,?,?,?)", [day_of_month, month, year, epoch_time, i])
-    dbconn.commit()
+    for i in texts:
+        dbcurs.execute("INSERT INTO nat VALUES (?,?,?,?,?)", [day_of_month, month, year, epoch_time, i])
+        dbconn.commit()
 
 dbconn.close()
 
