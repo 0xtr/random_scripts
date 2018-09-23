@@ -9,24 +9,81 @@ from mpl_toolkits.basemap import Basemap
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 # import ggplot
 
-date = datetime.date.today()
-day_of_month = date.day
-month = date.month
-year = date.year
-"""
+
+def save_results_to_db():
+    parser = MyParser()
+    parser.feed(the_page)
+
+    for i in texts:
+        direction = "WEST" if "EAST LEVELS NIL" in i else "EAST"
+        dbcurs.execute("INSERT INTO nat VALUES (?, ?,?,?,?,?)", [direction, day_of_month, month, year, epoch_time, i])
+        dbconn.commit()
+
+
 def remove_non_ascii(text):
     return unidecode(text)
 
 
-dbconn = sqlite3.connect("resources/nat_tracks.db")
-dbcurs = dbconn.cursor()
-dbcurs.execute("CREATE TABLE IF NOT EXISTS nat ("
-               "direction text, "
-               "day_of_month int, month int, year int, "
-               "epochtime int, "
-               "details text)")
+def strip_levels(items):
+    for pos, item in enumerate(items):
+        item = item.split("EAST LVLS")[0]
+        items[pos] = item
+    return items
+
+
+def generate_map(plotitems):
+    fig = plt.figure(figsize=(18, 15))
+    ax = fig.add_axes([0.05, 0.05, 0.9, 0.85])
+
+    """
+    m = Basemap(projection='stere', lon_0=-35, lat_0=55, lat_ts=55,
+                width=5000000, height=2000000, resolution='l')
+                hmm try a flat projection instead
+                """
+    m = Basemap(projection='merc',
+                lon_0=-35, lat_0=55, lat_ts=55,
+                llcrnrlat=40, llcrnrlon=-70,
+                urcrnrlat=63, urcrnrlon=0,
+                resolution='l')
+    m.drawcoastlines()
+    m.fillcontinents()
+
+    m.drawparallels(np.arange(20, 70, 1), labels=[False, True, True, False], dashes=[1, 0], color='0.8')
+    m.drawmeridians(np.arange(-100, 20, 1), labels=[True, False, False, False], dashes=[1, 0], color='0.8')
+
+    ax.set_title("North Atlantic Tracks for " + str(day_of_month) + "." + str(month) + "." + str(year))
+    plt.gcf().set_size_inches([18, 9])
+    plt.show()
+
+
+def remove_invalid_routes(data):
+    for pos, item in enumerate(data):
+        if not re.match(r"[A-Z] [A-Z]{5} .+", item):
+            print("Invalid entry removed: " + item)
+            data.remove(item)
+    return data
+
+
+def open_sqlite_db():
+    conn = sqlite3.connect("resources/nat_tracks.db")
+    curs = conn.cursor()
+    curs.execute("CREATE TABLE IF NOT EXISTS nat ("
+                 "direction text, "
+                 "day_of_month int, month int, year int, "
+                 "epochtime int, "
+                 "details text)")
+    return conn, curs
+
+
+def get_day_results(curs):
+    dbcurs.execute("SELECT * FROM nat WHERE day_of_month = ? AND month = ? AND year = ?", [day_of_month, month, year])
+    return curs.fetchall()
+
+
+dbconn, dbcurs = open_sqlite_db()
 
 get_new = True
 date = datetime.date.today()
@@ -34,14 +91,14 @@ day_of_month = date.day
 month = date.month
 year = date.year
 
-dbcurs.execute("SELECT * FROM nat WHERE day_of_month = ? AND month = ? AND year = ?", [day_of_month, month, year])
-results = dbcurs.fetchall()
+results = get_day_results(dbcurs)
 if len(results) is not 0:
     if len(results) is 5:
         dbcurs.execute("DELETE FROM nat WHERE day_of_month = ? AND month = ? AND year = ?", [day_of_month, month, year])
         print("Clearing partial results collected already for a re-run; deleted " + str(dbcurs.fetchall()) + " rows")
     else:
         # clarify the maxes we can expect? 10 westbound as of this morning???
+        get_new = False
         print("Got " + str(len(results)) + " for today")
 
 texts = []
@@ -75,34 +132,12 @@ class MyParser(HTMLParser):
 
 
 if get_new is True:
-    parser = MyParser()
-    parser.feed(the_page)
+    save_results_to_db()
+    if len(texts) is not 0:
+        print("Collected info for " + str(len(texts)) + " NAT tracks")
 
-    for i in texts:
-        direction = "WEST" if "EAST LEVELS NIL" in i else "EAST"
-        dbcurs.execute("INSERT INTO nat VALUES (?, ?,?,?,?,?)", [direction, day_of_month, month, year, epoch_time, i])
-        dbconn.commit()
+to_plot = get_day_results(dbcurs)
+to_plot = [i[5] for i in to_plot]
+generate_map(remove_invalid_routes(strip_levels(to_plot)))
 
 dbconn.close()
-
-if len(texts) is not 0:
-    print("Collected info for " + str(len(texts)) + " NAT tracks")
-
-# TODO:
-# text processing
-# mapping
-"""
-
-fig = plt.figure(figsize=(18, 15))
-ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
-
-m = Basemap(projection='stere', lon_0=-35, lat_0=55, lat_ts=55,
-            width=5000000, height=2000000, resolution='l', area_thresh=10000)
-m.drawcoastlines()
-m.fillcontinents()
-
-m.drawparallels(np.arange(20, 70, 1))
-m.drawmeridians(np.arange(-100, 20, 1))
-
-ax.set_title("North Atlantic Tracks for " + str(day_of_month) + "/" + str(month) + "/" + str(year))
-plt.show()
