@@ -13,9 +13,9 @@ import matplotlib.pyplot as plt
 # import ggplot
 
 
-def save_results_to_db():
+def save_results_to_db(page):
     parser = MyParser()
-    parser.feed(the_page)
+    parser.feed(page)
 
     for i in texts:
         direction = "WEST" if "EAST LEVELS NIL" in i else "EAST"
@@ -56,6 +56,12 @@ def generate_map(plotitems):
 
     ax.set_title("North Atlantic Tracks for " + str(day_of_month) + "." + str(month) + "." + str(year))
     plt.gcf().set_size_inches([18, 9])
+
+    for item in plotitems:
+        # WAIT HOLD UP fix the line below first, it's not right but it's time for the good place season 3
+        x, y = map(item.markers, item.markers)
+        m.plot(x, y, marker=item.from_item, color='m')
+
     plt.show()
 
 
@@ -81,6 +87,59 @@ def open_sqlite_db():
 def get_day_results(curs):
     dbcurs.execute("SELECT * FROM nat WHERE day_of_month = ? AND month = ? AND year = ?", [day_of_month, month, year])
     return curs.fetchall()
+
+
+def process_plot_data(to_process):
+    newplots = []
+    for i in to_process:
+        print(i)
+        fragments = i.split(" ")
+        fraglen = len(fragments)
+        p = PlotItem()
+        p.from_item = fragments[1]
+        for frag in fragments:
+            if "/" in frag:
+                nums = frag.split("/")
+                p.markers.append([nums[0], nums[1]])
+
+        # TODO: hacky, clean up sometime
+        if is_a_marker(fragments[fraglen - 1]) and is_a_marker(fragments[fraglen - 2]):
+            p.to_item = len(fragments - 2)
+        newplots.append(p)
+
+    for p in newplots:
+        print(p.markers)
+    return newplots
+
+
+def is_a_marker(fragment):
+    return re.match("[A-Z]{5}", fragment)
+
+
+class PlotItem:
+    from_item = []
+    to_item = []
+    markers = []
+
+
+class MyParser(HTMLParser):
+    def error(self, message):
+        pass
+
+    def handle_data(self, data):
+        data = data.strip().replace("\n", " ")
+        data = re.sub(r"REMARKS.+-", "", data)
+        data = re.sub(r"PART .{2,5} OF .{2,5} PARTS-", "", data)
+
+        if len(data) is not 0 and "PART" in data:
+            data = re.sub(r"- {0,5}END OF PART .{2,5} OF .{2,5} PARTS.+", "", data)
+
+            if "-" in data:
+                splits = data.split("- ")
+                for s in splits:
+                    texts.append(s.lstrip(" "))
+            else:
+                texts.append(data.lstrip(" "))
 
 
 dbconn, dbcurs = open_sqlite_db()
@@ -109,35 +168,14 @@ the_page = ""
 if get_new is True:
     response = requests.get(url)
     the_page = response.content.decode("utf-8")
-
-
-class MyParser(HTMLParser):
-    def error(self, message):
-        pass
-
-    def handle_data(self, data):
-        data = data.strip().replace("\n", " ")
-        data = re.sub(r"REMARKS.+-", "", data)
-        data = re.sub(r"PART .{2,5} OF .{2,5} PARTS-", "", data)
-
-        if len(data) is not 0 and "PART" in data:
-            data = re.sub(r"- {0,5}END OF PART .{2,5} OF .{2,5} PARTS.+", "", data)
-
-            if "-" in data:
-                splits = data.split("- ")
-                for s in splits:
-                    texts.append(s.lstrip(" "))
-            else:
-                texts.append(data.lstrip(" "))
-
-
-if get_new is True:
-    save_results_to_db()
+    save_results_to_db(the_page)
     if len(texts) is not 0:
         print("Collected info for " + str(len(texts)) + " NAT tracks")
 
 to_plot = get_day_results(dbcurs)
 to_plot = [i[5] for i in to_plot]
-generate_map(remove_invalid_routes(strip_levels(to_plot)))
+to_plot = remove_invalid_routes(strip_levels(to_plot))
+to_plot = process_plot_data(to_plot)
+generate_map(to_plot)
 
 dbconn.close()
