@@ -38,11 +38,6 @@ def generate_map(plotitems):
     fig = plt.figure(figsize=(18, 15))
     ax = fig.add_axes([0.05, 0.05, 0.9, 0.85])
 
-    """
-    m = Basemap(projection='stere', lon_0=-35, lat_0=55, lat_ts=55,
-                width=5000000, height=2000000, resolution='l')
-                hmm try a flat projection instead
-                """
     m = Basemap(projection='merc',
                 lon_0=-35, lat_0=55, lat_ts=55,
                 llcrnrlat=40, llcrnrlon=-70,
@@ -57,10 +52,11 @@ def generate_map(plotitems):
     ax.set_title("North Atlantic Tracks for " + str(day_of_month) + "." + str(month) + "." + str(year))
     plt.gcf().set_size_inches([18, 9])
 
+    m.plot(50, 50)
     for item in plotitems:
-        # WAIT HOLD UP fix the line below first, it's not right but it's time for the good place season 3
-        x, y = map(item.markers, item.markers)
-        m.plot(x, y, marker=item.from_item, color='m')
+        item.lons = [-x for x in item.lons]
+        x, y = m(item.lons, item.lats)
+        m.plot(x, y, marker='s', color='m')
 
     plt.show()
 
@@ -92,23 +88,23 @@ def get_day_results(curs):
 def process_plot_data(to_process):
     newplots = []
     for i in to_process:
-        print(i)
+        print("processing " + str(i))
         fragments = i.split(" ")
         fraglen = len(fragments)
         p = PlotItem()
         p.from_item = fragments[1]
-        for frag in fragments:
-            if "/" in frag:
-                nums = frag.split("/")
-                p.markers.append([nums[0], nums[1]])
 
-        # TODO: hacky, clean up sometime
-        if is_a_marker(fragments[fraglen - 1]) and is_a_marker(fragments[fraglen - 2]):
-            p.to_item = len(fragments - 2)
+        for frag in fragments:
+            if "/" in frag and len(frag) is 5:
+                nums = frag.split("/")
+                p.lats.append(int(nums[0]))
+                p.lons.append(int(nums[1]))
+
+        if is_a_marker(fragments[fraglen - 2]):
+            p.to_item = fragments[fraglen - 2]
+
         newplots.append(p)
 
-    for p in newplots:
-        print(p.markers)
     return newplots
 
 
@@ -119,7 +115,14 @@ def is_a_marker(fragment):
 class PlotItem:
     from_item = []
     to_item = []
-    markers = []
+    lats = []
+    lons = []
+
+    def __init__(self):
+        self.from_item = ''
+        self.to_item = ''
+        self.lats = list()
+        self.lons = list()
 
 
 class MyParser(HTMLParser):
@@ -152,13 +155,8 @@ year = date.year
 
 results = get_day_results(dbcurs)
 if len(results) is not 0:
-    if len(results) is 5:
-        dbcurs.execute("DELETE FROM nat WHERE day_of_month = ? AND month = ? AND year = ?", [day_of_month, month, year])
-        print("Clearing partial results collected already for a re-run; deleted " + str(dbcurs.fetchall()) + " rows")
-    else:
-        # clarify the maxes we can expect? 10 westbound as of this morning???
-        get_new = False
-        print("Got " + str(len(results)) + " for today")
+    dbcurs.execute("DELETE FROM nat WHERE day_of_month = ? AND month = ? AND year = ?", [day_of_month, month, year])
+    print("Clearing partial results collected already for a re-run; deleted " + str(len(dbcurs.fetchall())) + " rows")
 
 texts = []
 url = "https://www.notams.faa.gov/common/nat.html"
