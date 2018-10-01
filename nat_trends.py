@@ -40,7 +40,7 @@ def generate_map(plotitems):
 
     m = Basemap(projection='merc',
                 lon_0=-35, lat_0=55, lat_ts=55,
-                llcrnrlat=40, llcrnrlon=-70,
+                llcrnrlat=38, llcrnrlon=-70,
                 urcrnrlat=63, urcrnrlon=0,
                 resolution='l')
     m.drawcoastlines()
@@ -52,7 +52,6 @@ def generate_map(plotitems):
     ax.set_title("North Atlantic Tracks for " + str(day_of_month) + "." + str(month) + "." + str(year))
     plt.gcf().set_size_inches([18, 9])
 
-    m.plot(50, 50)
     for item in plotitems:
         item.lons = [-x for x in item.lons]
         x, y = m(item.lons, item.lats)
@@ -62,7 +61,7 @@ def generate_map(plotitems):
 
 
 def remove_invalid_routes(data):
-    for pos, item in enumerate(data):
+    for item in data[:]:
         if not re.match(r"[A-Z] [A-Z]{5} .+", item):
             print("Invalid entry removed: " + item)
             data.remove(item)
@@ -173,7 +172,6 @@ if get_new is True:
 to_plot = get_day_results(dbcurs)
 to_plot = [i[5] for i in to_plot]
 to_plot = remove_invalid_routes(strip_levels(to_plot))
-to_plot = process_plot_data(to_plot)
-generate_map(to_plot)
+generate_map(process_plot_data(to_plot))
 
 dbconn.close()
