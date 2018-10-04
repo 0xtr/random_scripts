@@ -47,17 +47,37 @@ def generate_map(plotitems):
     m.fillcontinents()
 
     m.drawparallels(np.arange(20, 70, 1), labels=[False, True, True, False], dashes=[1, 0], color='0.8')
-    m.drawmeridians(np.arange(-100, 20, 1), labels=[True, False, False, False], dashes=[1, 0], color='0.8')
+    m.drawmeridians(np.arange(-100, 20, 5), labels=[True, False, False, True], dashes=[1, 0], color='0.8')
 
     ax.set_title("North Atlantic Tracks for " + str(day_of_month) + "." + str(month) + "." + str(year))
     plt.gcf().set_size_inches([18, 9])
 
     for item in plotitems:
+        col = get_color(item.letter)
+        mark = get_marker(item.direction)
         item.lons = [-x for x in item.lons]
+
         x, y = m(item.lons, item.lats)
-        m.plot(x, y, marker='s', color='m')
+        m.plot(x, y, marker=mark, color=col)
+
+        # TODO: actually put coords down properly for markers
+        if len(item.lons) > 0:
+            x_beg, y_beg = m(item.lons[0], item.lats[0])
+            x_end, y_end = m(item.lons[len(item.lons)-1], item.lats[len(item.lats)-1])
+            start_align = "left" if mark is "<" else "right"
+            end_align = "right" if mark is "<" else "left"
+            plt.text(x_beg, y_beg, item.from_item, fontweight='bold', va='bottom', ha=start_align)
+            plt.text(x_end, y_end, item.to_item, va='center', ha=end_align)
 
     plt.show()
+
+
+def get_marker(direction):
+    return "<" if direction is "WEST" else ">"
+
+
+def get_color(letter):
+    return "xkcd:turquoise" if re.match("[A-L]", letter) else "xkcd:magenta"
 
 
 def remove_invalid_routes(data):
@@ -91,7 +111,9 @@ def process_plot_data(to_process):
         fragments = i.split(" ")
         fraglen = len(fragments)
         p = PlotItem()
+        p.letter = fragments[0]
         p.from_item = fragments[1]
+        p.direction = "WEST" if re.match("[A-L]", fragments[0]) else "EAST"
 
         for frag in fragments:
             if "/" in frag and len(frag) is 5:
@@ -116,8 +138,12 @@ class PlotItem:
     to_item = []
     lats = []
     lons = []
+    letter = ''
+    direction = ''
 
     def __init__(self):
+        self.direction = ''
+        self.letter = ''
         self.from_item = ''
         self.to_item = ''
         self.lats = list()
