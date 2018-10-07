@@ -127,10 +127,13 @@ def process_plot_data(to_process):
         p.direction = "WEST" if re.match("[A-L]", fragments[0]) else "EAST"
 
         for frag in fragments:
-            if "/" in frag and len(frag) is 5:
+            if "/" in frag:
                 nums = frag.split("/")
-                p.lats.append(int(nums[0]))
-                p.lons.append(int(nums[1]))
+                lon = int(nums[1])
+                lat = float(nums[0][:2] + "." + nums[0][2:]) if len(frag) is 7 else int(nums[0])
+
+                p.lats.append(lat)
+                p.lons.append(lon)
 
         if is_a_marker(fragments[fraglen - 2]):
             p.to_item = fragments[fraglen - 2]
