@@ -40,7 +40,7 @@ def generate_map(plotitems):
     ax.set_title("North Atlantic Tracks for " + str(day_of_month) + "." + str(month) + "." + str(year))
     plt.gcf().set_size_inches([18, 9])
 
-    m = Basemap(projection='lcc', width=12000000, height=9000000,
+    m = Basemap(projection='lcc', width=14000000, height=10000000,
                 lon_0=-35, lat_0=55, lat_ts=55, llcrnrlat=35, llcrnrlon=-60,
                 urcrnrlat=61, urcrnrlon=5, resolution='l')
     draw_fundamental_map_lines(m)
@@ -53,21 +53,31 @@ def generate_map(plotitems):
 
         x, y = m(item.lons, item.lats)
         m.plot(x, y, marker=mark, color=col)
-
         draw_start_end_markers(item, mark, m)
 
     plt.show()
 
 
 def draw_fir_boundaries(m):
+    # UK lines
     lats = [65, 54.8, 54, 51, 51, 45]
     lons = [-10, -10, -15, -15, -8, -8]
     x, y = m(lons, lats)
     m.plot(x, y, marker="", color="xkcd:greyish blue")
 
+    # shanwick
+    lats = [61, 61, 61, 61, 61, 45, 45, 45, 45, 45, 45, 45]
+    lons = [-10, -15, -20, -25, -30, -30, -25, -20, -15, -10, -5, 0]
+    x, y = m(lons, lats)
+    m.plot(x, y, marker="", color="xkcd:mint green")
+
+    # gander
+    # new york
+    # santa maria
+
 
 def draw_fundamental_map_lines(m):
-    m.drawcoastlines()
+    #m.drawcoastlines()
     m.fillcontinents()
     m.drawparallels(np.arange(20, 70, 1), labels=[False, True, False, False], dashes=[1, 0], color='0.8')
     m.drawmeridians(np.arange(-100, 20, 5), labels=[True, False, False, True], dashes=[1, 0], color='0.8')
@@ -153,6 +163,7 @@ class PlotItem:
         self.direction = "WEST" if re.match("[A-L]", fragments[0]) else "EAST"
 
         fraglen = len(fragments)
+        # TODO: handle 2nd marker when coords transcribed for them
         if is_a_marker(fragments[fraglen - 2]):
             self.to_item = fragments[fraglen - 2]
 
