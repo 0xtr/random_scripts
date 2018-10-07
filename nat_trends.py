@@ -120,23 +120,15 @@ def process_plot_data(to_process):
     for i in to_process:
         print("processing " + str(i))
         fragments = i.split(" ")
-        fraglen = len(fragments)
-        p = PlotItem()
-        p.letter = fragments[0]
-        p.from_item = fragments[1]
-        p.direction = "WEST" if re.match("[A-L]", fragments[0]) else "EAST"
+        p = PlotItem(fragments)
 
         for frag in fragments:
             if "/" in frag:
                 nums = frag.split("/")
                 lon = int(nums[1])
                 lat = float(nums[0][:2] + "." + nums[0][2:]) if len(frag) is 7 else int(nums[0])
-
                 p.lats.append(lat)
                 p.lons.append(lon)
-
-        if is_a_marker(fragments[fraglen - 2]):
-            p.to_item = fragments[fraglen - 2]
 
         newplots.append(p)
 
@@ -155,11 +147,15 @@ class PlotItem:
     letter = ''
     direction = ''
 
-    def __init__(self):
-        self.direction = ''
-        self.letter = ''
-        self.from_item = ''
-        self.to_item = ''
+    def __init__(self, fragments):
+        self.letter = fragments[0]
+        self.from_item = fragments[1]
+        self.direction = "WEST" if re.match("[A-L]", fragments[0]) else "EAST"
+
+        fraglen = len(fragments)
+        if is_a_marker(fragments[fraglen - 2]):
+            self.to_item = fragments[fraglen - 2]
+
         self.lats = list()
         self.lons = list()
 
