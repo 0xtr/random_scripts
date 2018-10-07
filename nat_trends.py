@@ -40,11 +40,9 @@ def generate_map(plotitems):
     ax.set_title("North Atlantic Tracks for " + str(day_of_month) + "." + str(month) + "." + str(year))
     plt.gcf().set_size_inches([18, 9])
 
-    m = Basemap(projection='merc',
-                lon_0=-35, lat_0=55, lat_ts=55,
-                llcrnrlat=38, llcrnrlon=-70,
-                urcrnrlat=63, urcrnrlon=0,
-                resolution='l')
+    m = Basemap(projection='lcc', width=12000000, height=9000000,
+                lon_0=-35, lat_0=55, lat_ts=55, llcrnrlat=35, llcrnrlon=-60,
+                urcrnrlat=61, urcrnrlon=5, resolution='l')
     draw_fundamental_map_lines(m)
     draw_fir_boundaries(m)
 
@@ -71,7 +69,7 @@ def draw_fir_boundaries(m):
 def draw_fundamental_map_lines(m):
     m.drawcoastlines()
     m.fillcontinents()
-    m.drawparallels(np.arange(20, 70, 1), labels=[False, True, True, False], dashes=[1, 0], color='0.8')
+    m.drawparallels(np.arange(20, 70, 1), labels=[False, True, False, False], dashes=[1, 0], color='0.8')
     m.drawmeridians(np.arange(-100, 20, 5), labels=[True, False, False, True], dashes=[1, 0], color='0.8')
 
 
