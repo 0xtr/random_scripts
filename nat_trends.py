@@ -37,20 +37,16 @@ def strip_levels(items):
 def generate_map(plotitems):
     fig = plt.figure(figsize=(18, 15))
     ax = fig.add_axes([0.05, 0.05, 0.9, 0.85])
+    ax.set_title("North Atlantic Tracks for " + str(day_of_month) + "." + str(month) + "." + str(year))
+    plt.gcf().set_size_inches([18, 9])
 
     m = Basemap(projection='merc',
                 lon_0=-35, lat_0=55, lat_ts=55,
                 llcrnrlat=38, llcrnrlon=-70,
                 urcrnrlat=63, urcrnrlon=0,
                 resolution='l')
-    m.drawcoastlines()
-    m.fillcontinents()
-
-    m.drawparallels(np.arange(20, 70, 1), labels=[False, True, True, False], dashes=[1, 0], color='0.8')
-    m.drawmeridians(np.arange(-100, 20, 5), labels=[True, False, False, True], dashes=[1, 0], color='0.8')
-
-    ax.set_title("North Atlantic Tracks for " + str(day_of_month) + "." + str(month) + "." + str(year))
-    plt.gcf().set_size_inches([18, 9])
+    draw_fundamental_map_lines(m)
+    draw_fir_boundaries(m)
 
     for item in plotitems:
         col = get_color(item.letter)
@@ -60,16 +56,33 @@ def generate_map(plotitems):
         x, y = m(item.lons, item.lats)
         m.plot(x, y, marker=mark, color=col)
 
-        # TODO: actually put coords down properly for markers
-        if len(item.lons) > 0:
-            x_beg, y_beg = m(item.lons[0], item.lats[0])
-            x_end, y_end = m(item.lons[len(item.lons)-1], item.lats[len(item.lats)-1])
-            start_align = "left" if mark is "<" else "right"
-            end_align = "right" if mark is "<" else "left"
-            plt.text(x_beg, y_beg, item.from_item, fontweight='bold', va='bottom', ha=start_align)
-            plt.text(x_end, y_end, item.to_item, va='center', ha=end_align)
+        draw_start_end_markers(item, mark, m)
 
     plt.show()
+
+
+def draw_fir_boundaries(m):
+    lats = [65, 54.8, 54, 51, 51, 45]
+    lons = [-10, -10, -15, -15, -8, -8]
+    x, y = m(lons, lats)
+    m.plot(x, y, marker="", color="xkcd:greyish blue")
+
+
+def draw_fundamental_map_lines(m):
+    m.drawcoastlines()
+    m.fillcontinents()
+    m.drawparallels(np.arange(20, 70, 1), labels=[False, True, True, False], dashes=[1, 0], color='0.8')
+    m.drawmeridians(np.arange(-100, 20, 5), labels=[True, False, False, True], dashes=[1, 0], color='0.8')
+
+
+def draw_start_end_markers(item, mark, m):
+    if len(item.lons) > 0:
+        x_beg, y_beg = m(item.lons[0], item.lats[0])
+        x_end, y_end = m(item.lons[len(item.lons)-1], item.lats[len(item.lats)-1])
+        start_align = "left" if mark is "<" else "right"
+        end_align = "right" if mark is "<" else "left"
+        plt.text(x_beg, y_beg, item.from_item, fontweight='bold', va='bottom', ha=start_align)
+        plt.text(x_end, y_end, item.to_item, va='center', ha=end_align)
 
 
 def get_marker(direction):
