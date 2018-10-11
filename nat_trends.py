@@ -10,7 +10,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-# import ggplot
+# Python wheels for basemap and pyproj are available at:
+# https://www.lfd.uci.edu/~gohlke/pythonlibs/
+# for windows, at least
 
 
 def save_results_to_db(page):
@@ -59,25 +61,31 @@ def generate_map(plotitems):
 
 
 def draw_fir_boundaries(m):
-    # UK lines
-    lats = [65, 54.8, 54, 51, 51, 45]
-    lons = [-10, -10, -15, -15, -8, -8]
-    x, y = m(lons, lats)
-    m.plot(x, y, marker="", color="xkcd:greyish blue")
+    airspace_name_to_colors = {
+        "UK": "xkcd:greyish blue",
+        "shanwick": "xkcd:mint green",
+        "gander": "xkcd:lime"
+    }
+    # key airspace name to a value tuple of lat/lon arrays
+    airspace_name_to_latlons = {
+        "UK": [[65, 54.8, 54, 51, 51, 45], [-10, -10, -15, -15, -8, -8]],
+        "shanwick": [[61, 61, 61, 61, 61, 45, 45, 45, 45, 45, 45, 45],
+                     [-10, -15, -20, -25, -30, -30, -25, -20, -15, -10, -5, 0]],
+        "gander": [[45, 45, 45, 44.5, 44.5, 44.5, 51, 52, 56, 61, 65],
+                   [-30, -35, -40, -40, -45, -50, -50, -54, -59, -63, -63]]
+    }
 
-    # shanwick
-    lats = [61, 61, 61, 61, 61, 45, 45, 45, 45, 45, 45, 45]
-    lons = [-10, -15, -20, -25, -30, -30, -25, -20, -15, -10, -5, 0]
-    x, y = m(lons, lats)
-    m.plot(x, y, marker="", color="xkcd:mint green")
+    for key, val in airspace_name_to_latlons.items():
+        x, y = m(val[1], val[0])
+        m.plot(x, y, marker="", color=airspace_name_to_colors.get(key))
 
-    # gander
+    # TODO:
     # new york
     # santa maria
 
 
 def draw_fundamental_map_lines(m):
-    #m.drawcoastlines()
+    # m.drawcoastlines()
     m.fillcontinents()
     m.drawparallels(np.arange(20, 70, 1), labels=[False, True, False, False], dashes=[1, 0], color='0.8')
     m.drawmeridians(np.arange(-100, 20, 5), labels=[True, False, False, True], dashes=[1, 0], color='0.8')
@@ -86,7 +94,7 @@ def draw_fundamental_map_lines(m):
 def draw_start_end_markers(item, mark, m):
     if len(item.lons) > 0:
         x_beg, y_beg = m(item.lons[0], item.lats[0])
-        x_end, y_end = m(item.lons[len(item.lons)-1], item.lats[len(item.lats)-1])
+        x_end, y_end = m(item.lons[len(item.lons) - 1], item.lats[len(item.lats) - 1])
         start_align = "left" if mark is "<" else "right"
         end_align = "right" if mark is "<" else "left"
         plt.text(x_beg, y_beg, item.from_item, fontweight='bold', va='bottom', ha=start_align)
