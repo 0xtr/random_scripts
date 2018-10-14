@@ -56,23 +56,35 @@ def generate_map(plotitems):
         x, y = m(item.lons, item.lats)
         m.plot(x, y, marker=mark, color=col)
         draw_start_end_markers(item, mark, m)
+        # TODO: investigate why some routes don't have an end marker?
 
     plt.show()
+
+
+def get_latlon_for_marker(marker):
+    # TODO: magic
+    print("Hello " + marker)
 
 
 def draw_fir_boundaries(m):
     airspace_name_to_colors = {
         "UK": "xkcd:greyish blue",
         "shanwick": "xkcd:mint green",
-        "gander": "xkcd:lime"
+        "gander": "xkcd:lime",
+        "santamaria": "xkcd:green yellow"
     }
     # key airspace name to a value tuple of lat/lon arrays
     airspace_name_to_latlons = {
-        "UK": [[65, 54.8, 54, 51, 51, 45], [-10, -10, -15, -15, -8, -8]],
+        "UK": [[65, 61, 61, 61, 54.8, 54, 51, 51, 45, 45, 43, 42, 36],
+               [0, 0, -5, -10, -10, -15, -15, -8, -8, -13, -13, -15, -15]],
         "shanwick": [[61, 61, 61, 61, 61, 45, 45, 45, 45, 45, 45, 45],
                      [-10, -15, -20, -25, -30, -30, -25, -20, -15, -10, -5, 0]],
-        "gander": [[45, 45, 45, 44.5, 44.5, 44.5, 51, 52, 56, 61, 65],
-                   [-30, -35, -40, -40, -45, -50, -50, -54, -59, -63, -63]]
+        "gander": [
+            [45, 45, 45, 44.5, 44.5, 44.5, 49, 53, 57, 61, 65, 65, 63, 60, 58.5, 58.5, 62.4, 65, 68, 65, 62.4, 61],
+            [-30, -35, -40, -40, -45, -51, -51, -54, -59, -63, -63, -60, -55, -51.5, -50, -43, -39, -36, -28, -36, -39,
+             -30]],
+        "santamaria": [[44.5, 27, 22.5, 17, 24, 30],
+                       [-40, -40, -40, -37.5, -25, -25]]
     }
 
     for key, val in airspace_name_to_latlons.items():
@@ -81,7 +93,6 @@ def draw_fir_boundaries(m):
 
     # TODO:
     # new york
-    # santa maria
 
 
 def draw_fundamental_map_lines(m):
