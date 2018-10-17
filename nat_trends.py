@@ -93,10 +93,23 @@ def draw_fir_boundaries(m):
 
     # TODO:
     # new york
+    # nota/sota boundaries
+
+    # TODO: make cleaner as more added, find best format to avoid cluttering map, angle text
+    # compress into loop etc
+    x, y = m(-11, 53)
+    plt.annotate("SHANNON FIR", xy=(x, y))
+    x, y = m(-14, 56)
+    plt.annotate("NOTA", xy=(x, y))
+    x, y = m(-12.5, 50)
+    plt.annotate("SOTA", xy=(x, y))
+    x, y = m(-29, 46)
+    plt.annotate("SHANWICK OCA", xy=(x, y))
+    x, y = m(-39, 45.5)
+    plt.annotate("GANDER OCEANIC CTA", xy=(x, y))
 
 
 def draw_fundamental_map_lines(m):
-    # m.drawcoastlines()
     m.fillcontinents()
     m.drawparallels(np.arange(20, 70, 1), labels=[False, True, False, False], dashes=[1, 0], color='0.8')
     m.drawmeridians(np.arange(-100, 20, 5), labels=[True, False, False, True], dashes=[1, 0], color='0.8')
