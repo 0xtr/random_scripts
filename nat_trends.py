@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 
 
 def save_results_to_db(page):
+    epoch_time = int(time.time())
     parser = MyParser()
     parser.feed(page)
 
@@ -84,7 +85,9 @@ def draw_fir_boundaries(m):
             [-30, -35, -40, -40, -45, -51, -51, -54, -59, -63, -63, -60, -55, -51.5, -50, -43, -39, -36, -28, -36, -39,
              -30]],
         "santamaria": [[44.5, 27, 22.5, 17, 24, 30],
-                       [-40, -40, -40, -37.5, -25, -25]]
+                       [-40, -40, -40, -37.5, -25, -25]],
+        "newyork": [[44.5, 44.5, 41.8],
+                    [-50, -52, -67]]
     }
 
     for key, val in airspace_name_to_latlons.items():
@@ -203,8 +206,39 @@ class PlotItem:
         self.lons = list()
 
 
+class MarkerLoader:
+    _file_location = "resources/entry_points_to_latlons.txt"
+    _marker_data = {}
+    _marker_list = []
+    _unique_latlons = []
+
+    def __init__(self):
+        with open(self._file_location) as fi:
+            contents = list(map(lambda x: x.replace("\n", ""), fi.readlines()))
+
+        temp = list(map(lambda sp: sp.split(","), contents))
+        for item in temp:
+            assert len(item) is 3
+            i1 = float(item[1])
+            i2 = float(item[2])
+            if [i1, i2] in self._unique_latlons:
+                print("Marker for " + item[0] + " already recorded in list. Check for accuracy.")
+                exit(1)
+
+            self._marker_data[item[0]] = [i1, i2]
+            self._marker_list.append(item[0])
+            self._unique_latlons.append([i1, i2])
+
+    def get_marker_data(self):
+        return self._marker_data
+
+    def get_all_marker_names(self):
+        return self._marker_list
+
+
 class MyParser(HTMLParser):
     def error(self, message):
+        print(message)
         pass
 
     def handle_data(self, data):
@@ -234,20 +268,21 @@ year = date.year
 results = get_day_results(dbcurs)
 if len(results) is not 0:
     dbcurs.execute("DELETE FROM nat WHERE day_of_month = ? AND month = ? AND year = ?", [day_of_month, month, year])
-    print("Clearing partial results collected already for a re-run; deleted " + str(len(dbcurs.fetchall())) + " rows")
+    print("Clearing partial results collected already for a re-run; deleted " + str(dbcurs.rowcount) + " rows")
+
+if get_new is False:
+    print("heatmap NYI")
+    pass
 
 texts = []
 url = "https://www.notams.faa.gov/common/nat.html"
-epoch_time = int(time.time())
-the_page = ""
+the_page = requests.get(url).content.decode("utf-8")
 
-if get_new is True:
-    response = requests.get(url)
-    the_page = response.content.decode("utf-8")
-    save_results_to_db(the_page)
-    if len(texts) is not 0:
-        print("Collected info for " + str(len(texts)) + " NAT tracks")
+save_results_to_db(the_page)
+if len(texts) is not 0:
+    print("Collected info for " + str(len(texts)) + " tracks")
 
+load_markers = MarkerLoader()
 to_plot = get_day_results(dbcurs)
 to_plot = [i[5] for i in to_plot]
 to_plot = remove_invalid_routes(strip_levels(to_plot))
