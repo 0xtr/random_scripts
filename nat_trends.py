@@ -2,7 +2,6 @@ import datetime
 import re
 import time
 from html.parser import HTMLParser
-from unidecode import unidecode
 import requests
 import sqlite3
 from mpl_toolkits.basemap import Basemap
@@ -17,17 +16,14 @@ import matplotlib.pyplot as plt
 
 def save_results_to_db(page):
     epoch_time = int(time.time())
+    dt = datetime.date.today()
     parser = MyParser()
     parser.feed(page)
 
     for i in texts:
         direction = "WEST" if "EAST LEVELS NIL" in i else "EAST"
-        dbcurs.execute("INSERT INTO nat VALUES (?, ?,?,?,?,?)", [direction, day_of_month, month, year, epoch_time, i])
+        dbcurs.execute("INSERT INTO nat VALUES (?,?,?,?,?,?)", [direction, dt.day, dt.month, dt.year, epoch_time, i])
         dbconn.commit()
-
-
-def remove_non_ascii(text):
-    return unidecode(text)
 
 
 def strip_levels(items):
@@ -38,9 +34,10 @@ def strip_levels(items):
 
 
 def generate_map(plotitems):
+    marker_loader = MarkerLoader()
     fig = plt.figure(figsize=(18, 15))
     ax = fig.add_axes([0.05, 0.05, 0.9, 0.85])
-    ax.set_title("North Atlantic Tracks for " + str(day_of_month) + "." + str(month) + "." + str(year))
+    ax.set_title("North Atlantic Tracks for " + str(date.day) + "." + str(date.month) + "." + str(date.year))
     plt.gcf().set_size_inches([18, 9])
 
     m = Basemap(projection='lcc', width=14000000, height=10000000,
@@ -50,21 +47,36 @@ def generate_map(plotitems):
     draw_fir_boundaries(m)
 
     for item in plotitems:
-        col = get_color(item.letter)
-        mark = get_marker(item.direction)
-        item.lons = [-x for x in item.lons]
-
-        x, y = m(item.lons, item.lats)
-        m.plot(x, y, marker=mark, color=col)
-        draw_start_end_markers(item, mark, m)
-        # TODO: investigate why some routes don't have an end marker?
+        item = add_marker_latlons_to_item(item, marker_loader.get_marker_data())
+        plot_lines(m, item)
 
     plt.show()
 
 
-def get_latlon_for_marker(marker):
-    # TODO: magic
-    print("Hello " + marker)
+def add_marker_latlons_to_item(item, marker_data):
+    if item.to_item not in marker_data or item.from_item not in marker_data:
+        print("to: [" + item.to_item + "] / from: [" + item.from_item + "]")
+        print("Marker not found in marker records.")
+        pass
+
+    marker_to = marker_data.get(item.to_item)
+    marker_from = marker_data.get(item.from_item)
+    item.lats.append(marker_to[0])
+    item.lons.append(marker_to[1])
+    item.lats.insert(0, marker_from[0])
+    item.lons.insert(0, marker_from[1])
+    return item
+
+
+def plot_lines(m, item):
+    col = get_color(item.letter)
+    mark = get_marker(item.direction)
+    item.lons = list(map(lambda l: -l if l > 0 else l, item.lons))
+
+    x, y = m(item.lons, item.lats)
+    m.plot(x, y, marker=mark, color=col)
+    draw_start_end_markers(item, mark, m)
+    # TODO: investigate why some routes don't have an end marker?
 
 
 def draw_fir_boundaries(m):
@@ -156,7 +168,8 @@ def open_sqlite_db():
 
 
 def get_day_results(curs):
-    dbcurs.execute("SELECT * FROM nat WHERE day_of_month = ? AND month = ? AND year = ?", [day_of_month, month, year])
+    dt = datetime.date.today()
+    dbcurs.execute("SELECT * FROM nat WHERE day_of_month=? AND month=? AND year=?", [dt.day, dt.month, dt.year])
     return curs.fetchall()
 
 
@@ -260,14 +273,11 @@ class MyParser(HTMLParser):
 dbconn, dbcurs = open_sqlite_db()
 
 get_new = True
-date = datetime.date.today()
-day_of_month = date.day
-month = date.month
-year = date.year
-
 results = get_day_results(dbcurs)
 if len(results) is not 0:
-    dbcurs.execute("DELETE FROM nat WHERE day_of_month = ? AND month = ? AND year = ?", [day_of_month, month, year])
+    date = datetime.date.today()
+    dbcurs.execute("DELETE FROM nat WHERE day_of_month = ? AND month = ? AND year = ?",
+                   [date.day, date.month, date.year])
     print("Clearing partial results collected already for a re-run; deleted " + str(dbcurs.rowcount) + " rows")
 
 if get_new is False:
@@ -275,14 +285,12 @@ if get_new is False:
     pass
 
 texts = []
-url = "https://www.notams.faa.gov/common/nat.html"
-the_page = requests.get(url).content.decode("utf-8")
+the_page = requests.get("https://www.notams.faa.gov/common/nat.html").content.decode("utf-8")
 
 save_results_to_db(the_page)
 if len(texts) is not 0:
     print("Collected info for " + str(len(texts)) + " tracks")
 
-load_markers = MarkerLoader()
 to_plot = get_day_results(dbcurs)
 to_plot = [i[5] for i in to_plot]
 to_plot = remove_invalid_routes(strip_levels(to_plot))
