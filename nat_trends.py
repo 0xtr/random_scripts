@@ -122,15 +122,15 @@ def draw_fir_boundaries(m):
     # TODO: make cleaner as more added, find best format to avoid cluttering map, angle text
     # compress into loop etc
     x, y = m(-11, 53)
-    plt.annotate("SHANNON FIR", xy=(x, y))
+    plt.annotate("SHANNON FIR", xy=(x, y), rotation="18")
     x, y = m(-14, 56)
-    plt.annotate("NOTA", xy=(x, y))
+    plt.annotate("NOTA", xy=(x, y), rotation="10")
     x, y = m(-12.5, 50)
-    plt.annotate("SOTA", xy=(x, y))
-    x, y = m(-45, 53)
-    plt.annotate("GANDER OCEANIC CTA", xy=(x, y))
+    plt.annotate("SOTA", xy=(x, y), rotation="10")
+    x, y = m(-45, 52.5)
+    plt.annotate("GANDER OCEANIC CTA", xy=(x, y), rotation="-4")
     x, y = m(-27, 53)
-    plt.annotate("SHANWICK OCA", xy=(x, y))
+    plt.annotate("SHANWICK OCA", xy=(x, y), rotation="9")
 
 
 def draw_fundamental_map_lines(m):
