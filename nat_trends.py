@@ -40,9 +40,9 @@ def generate_map(plotitems):
     ax.set_title("North Atlantic Tracks for " + str(date.day) + "." + str(date.month) + "." + str(date.year))
     plt.gcf().set_size_inches([18, 9])
 
-    m = Basemap(projection='lcc', width=14000000, height=10000000,
-                lon_0=-35, lat_0=55, lat_ts=55, llcrnrlat=35, llcrnrlon=-60,
-                urcrnrlat=61, urcrnrlon=5, resolution='l')
+    m = Basemap(projection='lcc', width=16000000, height=10000000,
+                lon_0=-35, lat_0=55, lat_ts=55, llcrnrlat=35, llcrnrlon=-67,
+                urcrnrlat=61, urcrnrlon=10, resolution='l')
     draw_fundamental_map_lines(m)
     draw_fir_boundaries(m)
 
@@ -83,8 +83,12 @@ def draw_fir_boundaries(m):
     airspace_name_to_colors = {
         "UK": "xkcd:greyish blue",
         "shanwick": "xkcd:mint green",
-        "gander": "xkcd:lime",
-        "santamaria": "xkcd:green yellow"
+        "gander-oceanic": "xkcd:lime",
+        "gander-domestic": "xkcd:mustard",
+        "santamaria": "xkcd:green yellow",
+        "nota": "xkcd:light purple",
+        "sota": "xkcd:light purple",
+        "multiple-outers": "xkcd:pale blue"
     }
     # key airspace name to a value tuple of lat/lon arrays
     airspace_name_to_latlons = {
@@ -92,14 +96,19 @@ def draw_fir_boundaries(m):
                [0, 0, -5, -10, -10, -15, -15, -8, -8, -13, -13, -15, -15]],
         "shanwick": [[61, 61, 61, 61, 61, 45, 45, 45, 45, 45, 45, 45],
                      [-10, -15, -20, -25, -30, -30, -25, -20, -15, -10, -5, 0]],
-        "gander": [
-            [45, 45, 45, 44.5, 44.5, 44.5, 49, 53, 57, 61, 65, 65, 63, 60, 58.5, 58.5, 62.4, 65, 68, 65, 62.4, 61],
-            [-30, -35, -40, -40, -45, -51, -51, -54, -59, -63, -63, -60, -55, -51.5, -50, -43, -39, -36, -28, -36, -39,
-             -30]],
+        "gander-oceanic": [
+            [45, 45, 45, 44.5, 44.5, 44.5, 45, 45, 49, 53, 57, 61, 65, 65, 63, 60, 58.5, 58.5, 62.4, 65, 68, 65, 62.4, 61],
+            [-30, -35, -40, -40, -45, -50, -50, -51, -51, -54, -59, -63, -63, -60, -55, -51.5, -50, -43, -39, -36, -28, -36, -39, -30]],
+        "gander-domestic": [[45, 45, 41.80, 39, 38.5, 38.5, 27],
+                            [-51, -53, -67, -67, -69, -60, -60]],
         "santamaria": [[44.5, 27, 22.5, 17, 24, 30],
                        [-40, -40, -40, -37.5, -25, -25]],
-        "newyork": [[44.5, 44.5, 41.8],
-                    [-50, -52, -67]]
+        "nota": [[54, 57, 57],
+                 [-15, -15, -10]],
+        "sota": [[51, 49, 48.5],
+                 [-15, -15, -8]],
+        "multiple-outers": [[44.5, 42.23, 41.8],
+                            [-50, -61.12, -67]]
     }
 
     for key, val in airspace_name_to_latlons.items():
@@ -118,10 +127,10 @@ def draw_fir_boundaries(m):
     plt.annotate("NOTA", xy=(x, y))
     x, y = m(-12.5, 50)
     plt.annotate("SOTA", xy=(x, y))
-    x, y = m(-29, 46)
-    plt.annotate("SHANWICK OCA", xy=(x, y))
-    x, y = m(-39, 45.5)
+    x, y = m(-45, 53)
     plt.annotate("GANDER OCEANIC CTA", xy=(x, y))
+    x, y = m(-27, 53)
+    plt.annotate("SHANWICK OCA", xy=(x, y))
 
 
 def draw_fundamental_map_lines(m):
