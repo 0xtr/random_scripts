@@ -1,5 +1,3 @@
-import math
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -18,7 +16,7 @@ def generate_map():
 
     latlons = dict(zip(list(cols["Latitude"]), list(cols["Longitude"])))
     for key, val in latlons.items():
-        parse_values(m, key, val)
+        plot_lines(m, key, val)
 
     plt.show()
 
@@ -38,12 +36,6 @@ def dms_to_dd(val):
         dd *= -1
 
     return dd
-
-
-def parse_values(m, key, val):
-    lat = dms_to_dd(key)
-    lon = dms_to_dd(val)
-    plot_lines(m, float(lat), float(lon))
 
 
 def process_lon_to_float(lon):
@@ -69,4 +61,5 @@ def draw_fundamental_map_lines(m):
 
 data = pd.read_csv("resources/airprox_reports_2000_to_2018.csv")
 cols = data[["Latitude", "Longitude"]]
+cols = cols.applymap(dms_to_dd)
 generate_map()
