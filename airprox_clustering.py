@@ -6,32 +6,44 @@ import pandas as pd
 from mpl_toolkits.basemap import Basemap
 
 
-def generate_map(plotitems):
+def generate_map():
     fig = plt.figure(figsize=(18, 15))
     ax = fig.add_axes([0.05, 0.05, 0.9, 0.85])
     ax.set_title("Airprox Incidents 2000-2018?")
     plt.gcf().set_size_inches([18, 10])
 
-    m = Basemap(projection='tmerc',
-                lon_0=-4.36, lat_0=55, llcrnrlat=49, llcrnrlon=-8.5,
+    m = Basemap(projection='merc', lon_0=-4.36, lat_0=55, llcrnrlat=49, llcrnrlon=-8.5,
                 urcrnrlat=59, urcrnrlon=5, resolution='l')
     draw_fundamental_map_lines(m)
 
     latlons = dict(zip(list(cols["Latitude"]), list(cols["Longitude"])))
     for key, val in latlons.items():
-        if type(key) is "float" and key.isdigit() and math.isnan(float(key)):
-            continue
-
-        if type(key) is float:
-            lat = key
-            lon = val
-        else:
-            lat = key[0:2] + "." + key[2:4]
-            lon = process_lon_to_float(val)
-
-        plot_lines(m, float(lat), float(lon))
+        parse_values(m, key, val)
 
     plt.show()
+
+
+def dms_to_dd(val):
+    degrees = minutes = seconds = 0
+
+    if "N" in val or "S" in val:
+        degrees = val[0:2]
+        minutes = val[2:4]
+    else:
+        degrees = val[1:3]
+        minutes = val[3:5]
+
+    dd = float(degrees) + float(minutes) / 60 + float(seconds) / 3600
+    if "S" in val or "W" in val:
+        dd *= -1
+
+    return dd
+
+
+def parse_values(m, key, val):
+    lat = dms_to_dd(key)
+    lon = dms_to_dd(val)
+    plot_lines(m, float(lat), float(lon))
 
 
 def process_lon_to_float(lon):
@@ -57,5 +69,4 @@ def draw_fundamental_map_lines(m):
 
 data = pd.read_csv("resources/airprox_reports_2000_to_2018.csv")
 cols = data[["Latitude", "Longitude"]]
-
-generate_map(cols)
+generate_map()
